@@ -22,6 +22,10 @@ Two mechanisms define the engine:
   (`sliding_window_scan`), provide a limb-aware entry point
   (`modexp_limbs`), and modular inversion (`modinv`) via binary EEA.
   Same dynamic-window odd-table semantics.
+- `src/BornRuleKernel.jl` — Quantum Born Rule skill collapse kernel.
+  Models a 1,000-skill library as a normalized amplitude vector and
+  samples a concrete skill via \(P(i) = |c_i|^2\). Supports amplitude
+  reinforcement from execution rewards.
 - `src/FeedbackLoop.jl` — the Algorithm Engine Feedback Loop: it
   ingests code or IR, runs a structural token/pattern matcher to
   isolate modular exponentiation blocks, computes collision metrics
@@ -35,6 +39,9 @@ Two mechanisms define the engine:
   safety. `lean/SovereignAlgorithmEngine.supplied.lean` is the
   supplied original, kept verbatim.
 - `test/runtests.jl` — the Julia test suite.
+- `kernels/architecture/AutonomousDaemonArchitecture.md` — specification
+  of the Autonomous Feedback Loop Daemon Architecture and the Quantum
+  Born Rule Skill Expansion Engine (1,000+ skills, 10 clusters).
 - `kernels/fortran/modexp_dynamic_odd.f90` — Fortran kernel realising
   the same dynamic-window odd-table algorithm with 64-bit limb helpers.
 - `kernels/fortran/modinv.f90` — Fortran modular inversion (binary EEA).
@@ -55,6 +62,9 @@ julia src/FeedbackLoop.jl  # the feedback report on the example snippet
 ```
 # Julia full kernels (same semantics)
 julia -e 'using .SovereignAlgorithmEngine; println(modexp_limbs(5, 13, 100; size_hint=4)); println(modinv(3, 7))'
+
+# Born Rule collapse (uniform amplitudes → random skill)
+julia -e 'using .SovereignAlgorithmEngine; amps = fill(complex(1/sqrt(1000)), 1000); println(born_rule_collapse(amps))'
 
 # Fortran
 gfortran -o test_modexp kernels/fortran/modexp_dynamic_odd.f90
