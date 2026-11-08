@@ -30,6 +30,9 @@ Local repository, not pushed. Built 2026-11-07.
   samples from a 1,000-element amplitude vector with probability
   \(|c_i|^2\); `update_amplitudes` performs simple reward-based
   reinforcement and re-normalization. Source-complete.
+- Quantum Re-Collapse (`RetryDaemon` / `think_again`): golden-ratio
+  moduli shift, phase modulation + damping, renormalization, and fresh
+  Born collapse. Ported from the supplied Rust sketch.
 
 ## Lean 4 (Mathlib environment: ~/workspace/scm-mathlib-test, lake env)
 
@@ -57,7 +60,8 @@ Local repository, not pushed. Built 2026-11-07.
   inversion via binary EEA. Same semantics as the core; ready for
   multi-precision replacement of the arithmetic.
 - `src/BornRuleKernel.jl` — Julia Born Rule skill collapse kernel for
-  the 1,000+ skill expansion engine.
+  the 1,000+ skill expansion engine, including the Quantum Re-Collapse
+  `RetryDaemon`.
 - `kernels/architecture/AutonomousDaemonArchitecture.md` — full
   specification of the five feedback-loop daemons and the Quantum Born
   Rule Skill Expansion Engine (Hilbert space formulation, Born rule
@@ -68,6 +72,8 @@ Local repository, not pushed. Built 2026-11-07.
   with gfortran; driver prints 5^13 mod 100 = 45.
 - `kernels/fortran/modinv.f90` — Fortran modular inversion (binary EEA).
   Driver prints inv(3) mod 7 = 5.
+- `kernels/fortran/retry_daemon.f90` — Fortran port of the Quantum
+  Re-Collapse `RetryDaemon`. Driver performs one think-again cycle.
 - `kernels/cuda/butterfly_warp_modexp.cu` — CUDA kernel using warp-level
   butterfly addressing (`__shfl_xor_sync`) for reductions and table
   broadcasts. One warp collaborates on an exponentiation. Driver prints
