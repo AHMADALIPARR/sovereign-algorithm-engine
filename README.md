@@ -17,6 +17,10 @@ Two mechanisms define the engine:
   (exact integer ceil(log2(n))), `odd_multiples` (the table's index
   set), and `modexp_dynamic_odd`, a sliding-window exponentiation over
   BigInt whose precomputation table holds odd multiples only.
+- `src/FullKernels.jl` — full kernels that separate precomputation
+  (`precompute_odd_table`) from the sliding-window scan
+  (`sliding_window_scan`) and provide a limb-aware entry point
+  (`modexp_limbs`). Same dynamic-window odd-table semantics.
 - `src/FeedbackLoop.jl` — the Algorithm Engine Feedback Loop: it
   ingests code or IR, runs a structural token/pattern matcher to
   isolate modular exponentiation blocks, computes collision metrics
@@ -46,6 +50,9 @@ julia src/FeedbackLoop.jl  # the feedback report on the example snippet
 ### Kernels
 
 ```
+# Julia full kernels (same semantics)
+julia -e 'using .SovereignAlgorithmEngine; println(modexp_limbs(5, 13, 100; size_hint=4))'
+
 # Fortran
 gfortran -o test_modexp kernels/fortran/modexp_dynamic_odd.f90
 ./test_modexp
