@@ -38,6 +38,21 @@ Local repository, not pushed. Built 2026-11-07.
 - The supplied original is preserved byte-for-byte in
   `lean/SovereignAlgorithmEngine.supplied.lean`.
 
+## Kernels (added 2026-11-08)
+
+- `kernels/fortran/modexp_dynamic_odd.f90` — Fortran realisation of the
+  dynamic-window odd-table algorithm. Single-limb fast path with the
+  same window logic; multi-limb schoolbook helpers sketched. Compiles
+  with gfortran; driver prints 5^13 mod 100 = 45.
+- `kernels/cuda/butterfly_warp_modexp.cu` — CUDA kernel using warp-level
+  butterfly addressing (`__shfl_xor_sync`) for reductions and table
+  broadcasts. One warp collaborates on an exponentiation. Driver prints
+  the same 45. Requires compute capability 7.0+.
+- Kernels are source-complete and match the Julia semantics on the
+  small test vectors. Full multi-limb production paths and performance
+  measurements remain future work; no hardware verification has been
+  run in this environment.
+
 ## Scope limits
 
 - The matcher is structural (regular expressions over source text),
