@@ -23,6 +23,9 @@ Local repository, not pushed. Built 2026-11-07.
   dynamic-window odd-table algorithm with separated stages and a
   limb conversion boundary. They match `modexp_dynamic_odd` on the
   existing test vectors (including the 5^13 mod 100 case).
+- Modular inversion (`modinv`): binary extended Euclidean algorithm.
+  Returns the inverse or throws if not invertible. Matches expected
+  values on small coprime pairs (e.g. inv(3) mod 7 = 5).
 
 ## Lean 4 (Mathlib environment: ~/workspace/scm-mathlib-test, lake env)
 
@@ -46,16 +49,21 @@ Local repository, not pushed. Built 2026-11-07.
 ## Kernels (added 2026-11-08)
 
 - `src/FullKernels.jl` — Julia full kernels: separated precomputation
-  and sliding-window scan, plus limb-aware entry point. Same semantics
-  as the core; ready for multi-precision replacement of the arithmetic.
+  and sliding-window scan, limb-aware entry point, and modular
+  inversion via binary EEA. Same semantics as the core; ready for
+  multi-precision replacement of the arithmetic.
 - `kernels/fortran/modexp_dynamic_odd.f90` — Fortran realisation of the
   dynamic-window odd-table algorithm. Single-limb fast path with the
   same window logic; multi-limb schoolbook helpers sketched. Compiles
   with gfortran; driver prints 5^13 mod 100 = 45.
+- `kernels/fortran/modinv.f90` — Fortran modular inversion (binary EEA).
+  Driver prints inv(3) mod 7 = 5.
 - `kernels/cuda/butterfly_warp_modexp.cu` — CUDA kernel using warp-level
   butterfly addressing (`__shfl_xor_sync`) for reductions and table
   broadcasts. One warp collaborates on an exponentiation. Driver prints
   the same 45. Requires compute capability 7.0+.
+- `kernels/cuda/modinv.cu` — CUDA modular inversion (binary EEA).
+  Driver prints inv(3) mod 7 = 5.
 - Kernels are source-complete and match the Julia semantics on the
   small test vectors. Full multi-limb production paths and performance
   measurements remain future work; no hardware verification has been
