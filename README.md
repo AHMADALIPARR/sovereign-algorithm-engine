@@ -1,118 +1,204 @@
 # Sovereign Algorithm Engine
 
-A windowed modular-exponentiation engine and the feedback loop that
-analyses exponentiation code against it.
+[![Julia](https://img.shields.io/badge/Julia-1.11-purple)](https://julialang.org)
+[![Lean 4](https://img.shields.io/badge/Lean-4-blue)](https://leanprover.github.io)
+[![CUDA](https://img.shields.io/badge/CUDA-sm_70+-green)](https://developer.nvidia.com/cuda-toolkit)
+[![License](https://img.shields.io/badge/License-BSL-red)](LICENSE)
 
-Two mechanisms define the engine:
+A verified, multi-language modular-exponentiation engine with dynamic-window odd-table algorithms, modular inversion, Quantum Born Rule skill collapse, and an Autonomous Feedback Loop Daemon Architecture.
 
-1. **Dynamic window sizing** — the window scales with input size,
-   w = ceil(log2(n)), rather than sitting at a fixed constant.
-2. **Odd-only lookup tables** — the precomputed multiples are
-   restricted to odd values (1P, 3P, 5P, ...): 2^(w-1) entries,
-   half the memory of a full table, with table index (v - 1) / 2.
+> **Core invariants**  
+> Dynamic window: \(2^{w-1} < n \le 2^w\)  
+> Odd-only table: \(2^{w-1}\) entries, index \((v-1)/2\)  
+> Lean 4 safety model: no `sorry`, `propext` only.
 
-## Layout
+---
 
-- `src/WindowedExponentiation.jl` — the engine core: `dynamic_window`
-  (exact integer ceil(log2(n))), `odd_multiples` (the table's index
-  set), and `modexp_dynamic_odd`, a sliding-window exponentiation over
-  BigInt whose precomputation table holds odd multiples only.
-- `src/FullKernels.jl` — full kernels that separate precomputation
-  (`precompute_odd_table`) from the sliding-window scan
-  (`sliding_window_scan`), provide a limb-aware entry point
-  (`modexp_limbs`), and modular inversion (`modinv`) via binary EEA.
-  Same dynamic-window odd-table semantics.
-- `src/BornRuleKernel.jl` — Quantum Born Rule skill collapse kernel.
-  Models a 1,000-skill library as a normalized amplitude vector and
-  samples a concrete skill via \(P(i) = |c_i|^2\). Supports amplitude
-  reinforcement from execution rewards. Includes the Quantum Re-Collapse
-  `RetryDaemon` (`think_again`) that performs a golden-ratio moduli
-  shift followed by a fresh Born collapse.
-- `src/FeedbackLoop.jl` — the Algorithm Engine Feedback Loop: it
-  ingests code or IR, runs a structural token/pattern matcher to
-  isolate modular exponentiation blocks, computes collision metrics
-  against known baselines (fixed-window binary, standard m-ary
-  sliding window, adaptive window odd), and emits the divergence
-  delta as the feedback report of the cycle.
-- `lean/SovereignAlgorithmEngine.lean` — the Lean 4 model of the
-  engine's configuration space: the dynamic-window invariant
-  2^(w-1) < n <= 2^w, the collision-safety predicate, and proofs that
-  the adaptive construction and the feedback-loop transition preserve
-  safety. `lean/SovereignAlgorithmEngine.supplied.lean` is the
-  supplied original, kept verbatim.
-- `test/runtests.jl` — the Julia test suite.
-- `kernels/architecture/AutonomousDaemonArchitecture.md` — specification
-  of the Autonomous Feedback Loop Daemon Architecture and the Quantum
-  Born Rule Skill Expansion Engine (1,000+ skills, 10 clusters).
-- `kernels/fortran/modexp_dynamic_odd.f90` — Fortran kernel realising
-  the same dynamic-window odd-table algorithm with 64-bit limb helpers.
-- `kernels/fortran/modinv.f90` — Fortran modular inversion (binary EEA).
-- `kernels/fortran/retry_daemon.f90` — Fortran port of the Quantum
-  Re-Collapse `RetryDaemon` (moduli shift + Born re-collapse).
-- `kernels/cuda/butterfly_warp_modexp.cu` — CUDA kernel using warp-level
-  butterfly addressing (`__shfl_xor_sync`) for reductions and broadcasts
-  inside a collaborative modular exponentiation.
-- `kernels/cuda/modinv.cu` — CUDA modular inversion (binary EEA).
-- `benchmarks/` — micro-benchmark scripts for Julia, Fortran, and CUDA.
+## Architecture Overview
 
-## Running
+```mermaid
+flowchart TD
+    subgraph Core["Core Engine (Julia)"]
+        A[WindowedExponentiation.jl] --> B[modexp_dynamic_odd]
+        C[FullKernels.jl] --> D[precompute_odd_table]
+        C --> E[sliding_window_scan]
+        C --> F[modinv]
+        G[BornRuleKernel.jl] --> H[born_rule_collapse]
+        G --> I[RetryDaemon / think_again]
+    end
 
-```
-julia test/runtests.jl     # the full suite
-julia src/FeedbackLoop.jl  # the feedback report on the example snippet
+    subgraph Feedback["Feedback Loop"]
+        J[FeedbackLoop.jl] --> K[Algorithm Matcher]
+        K --> L[Collision Delta Report]
+    end
+
+    subgraph Verification["Formal Verification"]
+        M[Lean 4 Model] --> N[satisfiesDynamicWindow]
+        M --> O[IsCollisionSafe]
+    end
+
+    subgraph Kernels["Accelerated Kernels"]
+        P[Fortran] --> Q[modexp + modinv + RetryDaemon]
+        R[CUDA Butterfly Warp] --> S[__shfl_xor_sync reductions]
+    end
+
+    subgraph Daemons["Autonomous Daemons"]
+        T[Δ_Orchestrator] --> U[Δ_Perception]
+        T --> V[Δ_Executor]
+        T --> W[Δ_Evaluator]
+        T --> X[Δ_Memory/Sync]
+    end
+
+    Core --> Feedback
+    Core --> Verification
+    Core --> Kernels
+    Kernels --> Daemons
 ```
 
-### Kernels
+---
 
+## Algorithms Showcase
+
+### 1. Dynamic-Window Odd-Table Modular Exponentiation
+
+| Property | Value |
+|----------|-------|
+| Window sizing | \(w = \lceil\log_2 n\rceil\) (exact integer) |
+| Table size | \(2^{w-1}\) odd multiples only |
+| Indexing | \((v-1)/2\) |
+| Scan | Sliding window from MSB, every window ends in 1 |
+
+**Implementations**
+- Julia: `modexp_dynamic_odd`, `modexp_limbs`
+- Fortran: `kernels/fortran/modexp_dynamic_odd.f90`
+- CUDA: `kernels/cuda/butterfly_warp_modexp.cu` (warp butterfly reductions)
+
+### 2. Modular Inversion (Binary Extended Euclidean)
+
+Returns \(a\) such that \(a \cdot x \equiv 1 \pmod{m}\), or fails if not invertible.
+
+- Julia / Fortran / CUDA implementations present.
+
+### 3. Quantum Born Rule Skill Collapse
+
+Models a 1,000-skill library as a normalized amplitude vector \(\lvert\psi\rangle = \sum c_i \lvert\phi_i\rangle\).
+
+\[
+P(i) = \lvert c_i\rvert^2
+\]
+
+- `born_rule_collapse` — inverse-transform sampling
+- `update_amplitudes` — reward reinforcement + renormalization
+- `RetryDaemon.think_again` — golden-ratio moduli shift + phase modulation + fresh collapse
+
+### 4. Autonomous Feedback Loop Daemon Architecture
+
+Five specialized daemons (Orchestrator, Perception, Executor, Evaluator, Memory/Sync) that continuously monitor, evaluate, and adapt. Full specification in `kernels/architecture/AutonomousDaemonArchitecture.md`.
+
+---
+
+## Quick Start
+
+```bash
+# Clone and run the Julia test suite (52/52)
+git clone https://github.com/AHMADALIPARR/sovereign-algorithm-engine
+cd sovereign-algorithm-engine
+julia test/runtests.jl
+
+# Feedback report demo
+julia src/FeedbackLoop.jl
 ```
-# Julia full kernels (same semantics)
+
+### Kernel Drivers
+
+```bash
+# Julia
 julia -e 'using .SovereignAlgorithmEngine; println(modexp_limbs(5, 13, 100; size_hint=4)); println(modinv(3, 7))'
 
-# Born Rule collapse (uniform amplitudes → random skill)
-julia -e 'using .SovereignAlgorithmEngine; amps = fill(complex(1/sqrt(1000)), 1000); println(born_rule_collapse(amps))'
-
-# Quantum Re-Collapse / Think Again
-julia -e 'using .SovereignAlgorithmEngine; amps = fill(1.0/sqrt(1000), 1000); d = RetryDaemon(amps); println(think_again(d, 0.2))'
-
 # Fortran
-gfortran -o test_modexp kernels/fortran/modexp_dynamic_odd.f90
-./test_modexp
-gfortran -o test_modinv kernels/fortran/modinv.f90
-./test_modinv
-gfortran -o test_retry kernels/fortran/retry_daemon.f90
-./test_retry
+gfortran -o test_modexp kernels/fortran/modexp_dynamic_odd.f90 && ./test_modexp
+gfortran -o test_modinv kernels/fortran/modinv.f90 && ./test_modinv
+gfortran -o test_retry kernels/fortran/retry_daemon.f90 && ./test_retry
 
-# CUDA (compute capability 7.0+)
-nvcc -o butterfly_modexp kernels/cuda/butterfly_warp_modexp.cu -arch=sm_70
-./butterfly_modexp
-nvcc -o modinv kernels/cuda/modinv.cu -arch=sm_70
-./modinv
+# CUDA (sm_70+)
+nvcc -o butterfly_modexp kernels/cuda/butterfly_warp_modexp.cu -arch=sm_70 && ./butterfly_modexp
+nvcc -o modinv kernels/cuda/modinv.cu -arch=sm_70 && ./modinv
 ```
+
+---
 
 ## Benchmarks
 
-Micro-benchmarks live in `benchmarks/` and cover the modular-exponentiation,
-modular-inversion, and Born Rule kernels.
+Micro-benchmarks live in `benchmarks/`. They measure wall-clock time on small fixed vectors and are intended for regression tracking.
+
+| Kernel | Language | Operation | Notes |
+|--------|----------|-----------|-------|
+| `modexp_limbs` | Julia | 5^13 mod 100 | BenchmarkTools |
+| `modinv` | Julia | inv(3) mod 7 | BenchmarkTools |
+| `born_rule_collapse` | Julia | 1000-skill sample | BenchmarkTools |
+| `modexp` | Fortran | 5^13 mod 100 | `cpu_time` |
+| `modinv` | Fortran | inv(3) mod 7 | `cpu_time` |
+| butterfly modexp | CUDA | 5^13 mod 100 | CUDA events |
+| modinv | CUDA | inv(3) mod 7 | CUDA events |
 
 ```bash
-# Julia (requires BenchmarkTools)
+# Run all
 julia -e 'using Pkg; Pkg.add("BenchmarkTools")'
 julia benchmarks/julia_bench.jl
 
-# Fortran
 gfortran -O3 -o fortran_bench benchmarks/fortran_bench.f90 \
   kernels/fortran/modexp_dynamic_odd.f90 kernels/fortran/modinv.f90
 ./fortran_bench
 
-# CUDA (sm_70+)
 nvcc -O3 -o cuda_bench benchmarks/cuda_bench.cu \
   kernels/cuda/butterfly_warp_modexp.cu kernels/cuda/modinv.cu -arch=sm_70
 ./cuda_bench
 ```
 
-See `benchmarks/README.md` for details. Timings are wall-clock averages on
-small fixed vectors and are intended for regression tracking; they are
-machine-dependent and do not constitute absolute performance claims.
+> Results are machine-dependent. Record local timings in `STATUS.md` if desired. No absolute performance claims are made.
 
-The Lean file is checked with a Mathlib-providing Lean environment;
-see STATUS.md for the verification record.
+---
+
+## Verification
+
+The Lean 4 model (`lean/SovereignAlgorithmEngine.lean`) proves:
+
+- Dynamic-window invariant \(2^{w-1} < n \le 2^w\)
+- Collision-safety of the adaptive odd-table construction
+- Feedback-loop transition preserves safety
+
+```
+#print axioms  →  [propext] only
+```
+
+See `STATUS.md` for the full verification record and toolchain notes.
+
+---
+
+## Repository Layout
+
+```
+src/
+  WindowedExponentiation.jl    # core dynamic-window odd-table modexp
+  FullKernels.jl               # separated kernels + modinv
+  BornRuleKernel.jl            # Born collapse + RetryDaemon
+  FeedbackLoop.jl              # structural matcher + collision delta
+lean/
+  SovereignAlgorithmEngine.lean
+kernels/
+  architecture/                # daemon architecture specification
+  fortran/                     # modexp, modinv, RetryDaemon
+  cuda/                        # butterfly-warp modexp, modinv
+benchmarks/                    # Julia / Fortran / CUDA harnesses
+test/runtests.jl               # 52/52 suite
+```
+
+---
+
+## License
+
+See [LICENSE](LICENSE).
+
+---
+
+*Built with formal verification in mind. The engine decides; the sandbox executes.*
