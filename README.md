@@ -49,6 +49,7 @@ Two mechanisms define the engine:
   butterfly addressing (`__shfl_xor_sync`) for reductions and broadcasts
   inside a collaborative modular exponentiation.
 - `kernels/cuda/modinv.cu` — CUDA modular inversion (binary EEA).
+- `benchmarks/` — micro-benchmark scripts for Julia, Fortran, and CUDA.
 
 ## Running
 
@@ -78,6 +79,31 @@ nvcc -o butterfly_modexp kernels/cuda/butterfly_warp_modexp.cu -arch=sm_70
 nvcc -o modinv kernels/cuda/modinv.cu -arch=sm_70
 ./modinv
 ```
+
+## Benchmarks
+
+Micro-benchmarks live in `benchmarks/` and cover the modular-exponentiation,
+modular-inversion, and Born Rule kernels.
+
+```bash
+# Julia (requires BenchmarkTools)
+julia -e 'using Pkg; Pkg.add("BenchmarkTools")'
+julia benchmarks/julia_bench.jl
+
+# Fortran
+gfortran -O3 -o fortran_bench benchmarks/fortran_bench.f90 \
+  kernels/fortran/modexp_dynamic_odd.f90 kernels/fortran/modinv.f90
+./fortran_bench
+
+# CUDA (sm_70+)
+nvcc -O3 -o cuda_bench benchmarks/cuda_bench.cu \
+  kernels/cuda/butterfly_warp_modexp.cu kernels/cuda/modinv.cu -arch=sm_70
+./cuda_bench
+```
+
+See `benchmarks/README.md` for details. Timings are wall-clock averages on
+small fixed vectors and are intended for regression tracking; they are
+machine-dependent and do not constitute absolute performance claims.
 
 The Lean file is checked with a Mathlib-providing Lean environment;
 see STATUS.md for the verification record.
