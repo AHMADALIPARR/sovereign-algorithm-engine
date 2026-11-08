@@ -18,6 +18,11 @@ Local repository, not pushed. Built 2026-11-07.
   literal log2 forms. The adaptive branch fires on literal log2
   usage. This is the skeleton's behavior, reproduced exactly.
 - Demo: `julia src/FeedbackLoop.jl` prints the feedback report.
+- Full kernels (`src/FullKernels.jl`): `precompute_odd_table`,
+  `sliding_window_scan`, and `modexp_limbs` implement the same
+  dynamic-window odd-table algorithm with separated stages and a
+  limb conversion boundary. They match `modexp_dynamic_odd` on the
+  existing test vectors (including the 5^13 mod 100 case).
 
 ## Lean 4 (Mathlib environment: ~/workspace/scm-mathlib-test, lake env)
 
@@ -40,6 +45,9 @@ Local repository, not pushed. Built 2026-11-07.
 
 ## Kernels (added 2026-11-08)
 
+- `src/FullKernels.jl` — Julia full kernels: separated precomputation
+  and sliding-window scan, plus limb-aware entry point. Same semantics
+  as the core; ready for multi-precision replacement of the arithmetic.
 - `kernels/fortran/modexp_dynamic_odd.f90` — Fortran realisation of the
   dynamic-window odd-table algorithm. Single-limb fast path with the
   same window logic; multi-limb schoolbook helpers sketched. Compiles
