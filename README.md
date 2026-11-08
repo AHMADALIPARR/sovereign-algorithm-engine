@@ -19,8 +19,9 @@ Two mechanisms define the engine:
   BigInt whose precomputation table holds odd multiples only.
 - `src/FullKernels.jl` — full kernels that separate precomputation
   (`precompute_odd_table`) from the sliding-window scan
-  (`sliding_window_scan`) and provide a limb-aware entry point
-  (`modexp_limbs`). Same dynamic-window odd-table semantics.
+  (`sliding_window_scan`), provide a limb-aware entry point
+  (`modexp_limbs`), and modular inversion (`modinv`) via binary EEA.
+  Same dynamic-window odd-table semantics.
 - `src/FeedbackLoop.jl` — the Algorithm Engine Feedback Loop: it
   ingests code or IR, runs a structural token/pattern matcher to
   isolate modular exponentiation blocks, computes collision metrics
@@ -36,9 +37,11 @@ Two mechanisms define the engine:
 - `test/runtests.jl` — the Julia test suite.
 - `kernels/fortran/modexp_dynamic_odd.f90` — Fortran kernel realising
   the same dynamic-window odd-table algorithm with 64-bit limb helpers.
+- `kernels/fortran/modinv.f90` — Fortran modular inversion (binary EEA).
 - `kernels/cuda/butterfly_warp_modexp.cu` — CUDA kernel using warp-level
   butterfly addressing (`__shfl_xor_sync`) for reductions and broadcasts
   inside a collaborative modular exponentiation.
+- `kernels/cuda/modinv.cu` — CUDA modular inversion (binary EEA).
 
 ## Running
 
@@ -51,15 +54,19 @@ julia src/FeedbackLoop.jl  # the feedback report on the example snippet
 
 ```
 # Julia full kernels (same semantics)
-julia -e 'using .SovereignAlgorithmEngine; println(modexp_limbs(5, 13, 100; size_hint=4))'
+julia -e 'using .SovereignAlgorithmEngine; println(modexp_limbs(5, 13, 100; size_hint=4)); println(modinv(3, 7))'
 
 # Fortran
 gfortran -o test_modexp kernels/fortran/modexp_dynamic_odd.f90
 ./test_modexp
+gfortran -o test_modinv kernels/fortran/modinv.f90
+./test_modinv
 
 # CUDA (compute capability 7.0+)
 nvcc -o butterfly_modexp kernels/cuda/butterfly_warp_modexp.cu -arch=sm_70
 ./butterfly_modexp
+nvcc -o modinv kernels/cuda/modinv.cu -arch=sm_70
+./modinv
 ```
 
 The Lean file is checked with a Mathlib-providing Lean environment;
