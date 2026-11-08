@@ -79,6 +79,18 @@ Local repository, not pushed. Built 2026-11-07.
   measurements remain future work; no hardware verification has been
   run in this environment.
 
+## Benchmarks (added 2026-11-08)
+
+- `benchmarks/julia_bench.jl` — BenchmarkTools harness for
+  `modexp_limbs`, `modinv`, and `born_rule_collapse`.
+- `benchmarks/fortran_bench.f90` — CPU-time harness for the Fortran
+  modexp and modinv kernels.
+- `benchmarks/cuda_bench.cu` — CUDA event-timed harness for the
+  butterfly-warp modexp and modinv kernels.
+- `benchmarks/README.md` — build and run instructions.
+- No absolute performance numbers are recorded here; run the scripts
+  locally and append results if desired.
+
 ## Scope limits
 
 - The matcher is structural (regular expressions over source text),
