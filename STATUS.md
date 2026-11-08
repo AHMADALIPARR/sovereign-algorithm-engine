@@ -26,6 +26,10 @@ Local repository, not pushed. Built 2026-11-07.
 - Modular inversion (`modinv`): binary extended Euclidean algorithm.
   Returns the inverse or throws if not invertible. Matches expected
   values on small coprime pairs (e.g. inv(3) mod 7 = 5).
+- Born Rule kernel (`src/BornRuleKernel.jl`): `born_rule_collapse`
+  samples from a 1,000-element amplitude vector with probability
+  \(|c_i|^2\); `update_amplitudes` performs simple reward-based
+  reinforcement and re-normalization. Source-complete.
 
 ## Lean 4 (Mathlib environment: ~/workspace/scm-mathlib-test, lake env)
 
@@ -52,6 +56,12 @@ Local repository, not pushed. Built 2026-11-07.
   and sliding-window scan, limb-aware entry point, and modular
   inversion via binary EEA. Same semantics as the core; ready for
   multi-precision replacement of the arithmetic.
+- `src/BornRuleKernel.jl` — Julia Born Rule skill collapse kernel for
+  the 1,000+ skill expansion engine.
+- `kernels/architecture/AutonomousDaemonArchitecture.md` — full
+  specification of the five feedback-loop daemons and the Quantum Born
+  Rule Skill Expansion Engine (Hilbert space formulation, Born rule
+  collapse, 10 operational clusters).
 - `kernels/fortran/modexp_dynamic_odd.f90` — Fortran realisation of the
   dynamic-window odd-table algorithm. Single-limb fast path with the
   same window logic; multi-limb schoolbook helpers sketched. Compiles
