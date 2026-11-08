@@ -10,5 +10,6 @@ export AnalysisResult, AlgorithmEngineFeedbackLoop
 export tokenize_and_inspect, evaluate_collision, run_feedback_loop
 export precompute_odd_table, sliding_window_scan, modexp_limbs, modinv
 export born_rule_collapse, update_amplitudes, skill_catalog_size
+export RetryDaemon, think_again
 
 end
