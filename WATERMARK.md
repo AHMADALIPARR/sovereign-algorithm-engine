@@ -1,0 +1,18 @@
+# WATERMARK — file manifest
+
+SHA-256 per file; the chain head is the SHA-256 of the
+hash lines below, in order.
+
+```
+6f26b3c4a6017597ef0a302b31125dbb9848b77129d598b503ad33818acbf8a6  LICENSE
+be4066e26f4318ead59f88b6a82473310e462f86104c5b31d9b4b0c43e8d4e9f  README.md
+4018b10634f0f893b96bb2de3b5d6eb0c5b1fd2ab3572b5e04c14f82353b7857  STATUS.md
+120b5c9f94ed5220c13aa5a6e2da0dbec9bd2a711c71f34404727f4b0ec98163  lean/SovereignAlgorithmEngine.lean
+515cc48368a20e0d3879a2c6151bc6280843e2879804a39ffafab8caf57c292b  lean/SovereignAlgorithmEngine.supplied.lean
+e15c4f9e8977154a2a99306909b3decb1f5fd283b6fb2fed61b702ef383f056e  src/FeedbackLoop.jl
+699ffe6fa74dea36e09f8679c1744f479ce82c2fb229da50bd201fd8b68edf63  src/SovereignAlgorithmEngine.jl
+a2cd128466c7b7ca56fa633a68c534dcf7cedb4a7ddd9eabe8c96610f59ffee3  src/WindowedExponentiation.jl
+b79940c0777fc441f4a341c0e46f443fc2120741076b25e163ba110e079d3b1d  test/runtests.jl
+```
+
+chain head: `7dee8f92b9c4df6c987d345d5dfa5941ff2963998ded5f0958099be86d260173`
