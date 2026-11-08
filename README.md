@@ -30,12 +30,29 @@ Two mechanisms define the engine:
   safety. `lean/SovereignAlgorithmEngine.supplied.lean` is the
   supplied original, kept verbatim.
 - `test/runtests.jl` — the Julia test suite.
+- `kernels/fortran/modexp_dynamic_odd.f90` — Fortran kernel realising
+  the same dynamic-window odd-table algorithm with 64-bit limb helpers.
+- `kernels/cuda/butterfly_warp_modexp.cu` — CUDA kernel using warp-level
+  butterfly addressing (`__shfl_xor_sync`) for reductions and broadcasts
+  inside a collaborative modular exponentiation.
 
 ## Running
 
 ```
 julia test/runtests.jl     # the full suite
 julia src/FeedbackLoop.jl  # the feedback report on the example snippet
+```
+
+### Kernels
+
+```
+# Fortran
+gfortran -o test_modexp kernels/fortran/modexp_dynamic_odd.f90
+./test_modexp
+
+# CUDA (compute capability 7.0+)
+nvcc -o butterfly_modexp kernels/cuda/butterfly_warp_modexp.cu -arch=sm_70
+./butterfly_modexp
 ```
 
 The Lean file is checked with a Mathlib-providing Lean environment;
