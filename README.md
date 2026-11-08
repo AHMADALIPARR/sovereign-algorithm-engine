@@ -25,7 +25,9 @@ Two mechanisms define the engine:
 - `src/BornRuleKernel.jl` — Quantum Born Rule skill collapse kernel.
   Models a 1,000-skill library as a normalized amplitude vector and
   samples a concrete skill via \(P(i) = |c_i|^2\). Supports amplitude
-  reinforcement from execution rewards.
+  reinforcement from execution rewards. Includes the Quantum Re-Collapse
+  `RetryDaemon` (`think_again`) that performs a golden-ratio moduli
+  shift followed by a fresh Born collapse.
 - `src/FeedbackLoop.jl` — the Algorithm Engine Feedback Loop: it
   ingests code or IR, runs a structural token/pattern matcher to
   isolate modular exponentiation blocks, computes collision metrics
@@ -45,6 +47,8 @@ Two mechanisms define the engine:
 - `kernels/fortran/modexp_dynamic_odd.f90` — Fortran kernel realising
   the same dynamic-window odd-table algorithm with 64-bit limb helpers.
 - `kernels/fortran/modinv.f90` — Fortran modular inversion (binary EEA).
+- `kernels/fortran/retry_daemon.f90` — Fortran port of the Quantum
+  Re-Collapse `RetryDaemon` (moduli shift + Born re-collapse).
 - `kernels/cuda/butterfly_warp_modexp.cu` — CUDA kernel using warp-level
   butterfly addressing (`__shfl_xor_sync`) for reductions and broadcasts
   inside a collaborative modular exponentiation.
@@ -67,11 +71,16 @@ julia -e 'using .SovereignAlgorithmEngine; println(modexp_limbs(5, 13, 100; size
 # Born Rule collapse (uniform amplitudes → random skill)
 julia -e 'using .SovereignAlgorithmEngine; amps = fill(complex(1/sqrt(1000)), 1000); println(born_rule_collapse(amps))'
 
+# Quantum Re-Collapse / Think Again
+julia -e 'using .SovereignAlgorithmEngine; amps = fill(1.0/sqrt(1000), 1000); d = RetryDaemon(amps); println(think_again(d, 0.2))'
+
 # Fortran
 gfortran -o test_modexp kernels/fortran/modexp_dynamic_odd.f90
 ./test_modexp
 gfortran -o test_modinv kernels/fortran/modinv.f90
 ./test_modinv
+gfortran -o test_retry kernels/fortran/retry_daemon.f90
+./test_retry
 
 # CUDA (compute capability 7.0+)
 nvcc -o butterfly_modexp kernels/cuda/butterfly_warp_modexp.cu -arch=sm_70
