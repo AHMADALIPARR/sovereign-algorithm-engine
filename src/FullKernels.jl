@@ -6,13 +6,14 @@
 #   - Separated precomputation of the odd-only table
 #   - Sliding-window scan kernel that consumes the table
 #   - Dynamic-window sizing that matches the Lean invariant
+#   - Modular inversion (binary extended Euclidean)
 #
 # The high-level modexp_dynamic_odd remains the public entry point;
 # these kernels are the internals that can be swapped or accelerated.
 
 using .SovereignAlgorithmEngine: dynamic_window, odd_multiples, isbitset
 
-export precompute_odd_table, sliding_window_scan, modexp_limbs
+export precompute_odd_table, sliding_window_scan, modexp_limbs, modinv
 
 # ---------------------------------------------------------------------------
 # Limb helpers (64-bit limbs, schoolbook). Sufficient for the verified
@@ -46,6 +47,49 @@ function from_limbs(v::LimbVec)
         r = (r << 64) | big(v.limbs[i])
     end
     return r
+end
+
+# ---------------------------------------------------------------------------
+# Modular inversion kernel — binary extended Euclidean algorithm
+# Returns a such that (a * x) ≡ 1 (mod m), or throws if gcd ≠ 1.
+# ---------------------------------------------------------------------------
+
+function modinv(x::Integer, m::Integer)
+    m >= 2 || throw(ArgumentError("modulus must be >= 2"))
+    x = mod(x, m)
+    x == 0 && throw(ArgumentError("not invertible"))
+
+    u, v = big(x), big(m)
+    x1, x2 = big(1), big(0)
+
+    while u != 0
+        while iseven(u)
+            u >>= 1
+            if iseven(x1)
+                x1 >>= 1
+            else
+                x1 = (x1 + m) >> 1
+            end
+        end
+        while iseven(v)
+            v >>= 1
+            if iseven(x2)
+                x2 >>= 1
+            else
+                x2 = (x2 + m) >> 1
+            end
+        end
+        if u >= v
+            u -= v
+            x1 -= x2
+        else
+            v -= u
+            x2 -= x1
+        end
+    end
+
+    v != 1 && throw(ArgumentError("not invertible: gcd=$(v)"))
+    return mod(x2, m)
 end
 
 # ---------------------------------------------------------------------------
